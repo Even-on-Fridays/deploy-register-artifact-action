@@ -1,0 +1,15 @@
+[package]
+name = "transistor-register-artifact-action"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "transistor-register-artifact-action"
+path = "src/main.rs"
+
+[dependencies]
+graphql_client = "0.12.0"
+reqwest = {version="^0.11", features=["gzip", "brotli", "rustls", "deflate", "json", "blocking"]}
+anyhow = "1.0.69"
+serde = "1.0.152"
+clap = { version = "4.1.8", features = ["derive"] }
