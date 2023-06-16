@@ -5,8 +5,11 @@ inputs:
   docker-image:
     description: 'Docker image incl. tag that have been pushed to the registry.'
     required: true
+  org_id:
+    description: 'Transistor OrgId.'
+    required: true
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - --docker-image=${{ inputs.docker-image }}
+    - --docker-image=${{ inputs.docker-image }} --org_id=${{ inputs.org_id }}

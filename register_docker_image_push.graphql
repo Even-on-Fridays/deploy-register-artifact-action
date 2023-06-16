@@ -1,3 +1,0 @@
-mutation GitHubActionRegisterDockerImagePush($input: RegisterDockerImagePushInput!) {
-    registerDockerImagePush(input: $input)
-}
