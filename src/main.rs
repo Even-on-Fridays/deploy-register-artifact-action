@@ -1,11 +1,9 @@
-use std::ffi::OsStr;
-use std::process::exit;
 use anyhow::anyhow;
 use clap::Parser;
-use graphql_client::GraphQLQuery;
-use reqwest::blocking::Response;
 use reqwest::StatusCode;
-use crate::git_hub_action_register_docker_image_push::{GitRepositoryProvider, RegisterDockerImagePushInput};
+use serde::Serialize;
+use std::ffi::OsStr;
+use std::process::exit;
 
 fn main() {
     let (input, env) = match read_input() {
@@ -18,17 +16,34 @@ fn main() {
         Err(err) => return print_and_exit(format!("Invalid input: {err:?}")),
     };
 
-    let vars = git_hub_action_register_docker_image_push::Variables{ input: RegisterDockerImagePushInput {
+    let vars = GithubActionArtifactPushPayload {
+        org_id: input.org_id,
         docker_image_ref: input.docker_image,
-        git_repository_provider: GitRepositoryProvider::GIT_HUB,
+        git_repository_provider: GitRepositoryProvider::GitHub,
         git_repository_server_url: env.server_url,
         git_repository_full_name: env.repository,
         commit_hash: env.commit_sha,
-    } };
+    };
 
     if let Err(err) = call_api(config, vars) {
         print_and_exit(format!("Failed to register docker image push: {err:?}"));
     }
+}
+
+#[derive(Serialize)]
+struct GithubActionArtifactPushPayload {
+    org_id: String,
+    docker_image_ref: String,
+    git_repository_provider: GitRepositoryProvider,
+    git_repository_server_url: String,
+    git_repository_full_name: String,
+    commit_hash: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+enum GitRepositoryProvider {
+    GitHub,
 }
 
 fn print_and_exit(message: String) {
@@ -36,47 +51,46 @@ fn print_and_exit(message: String) {
     exit(1);
 }
 
-fn call_api(config: Config, variables: git_hub_action_register_docker_image_push::Variables) -> anyhow::Result<()> {
-    let request_body = GitHubActionRegisterDockerImagePush::build_query(variables);
-
+fn call_api(config: Config, request_body: GithubActionArtifactPushPayload) -> anyhow::Result<()> {
     let client = reqwest::blocking::Client::new();
-    let mut res = client.post(config.graphql_url).header("authorization", "FAKE:acme").json(&request_body).send()?;
+    let res = client
+        .post(
+            config
+                .transistor_api_base_url
+                .join("/connector/webhook/github-actions/artifact-push")?,
+        )
+        .json(&request_body)
+        .send()?;
 
     if res.status() != StatusCode::OK {
-        return Err(anyhow!("server responded with http status {:?}", res.status()));
-    }
-
-    let response_body: graphql_client::Response<git_hub_action_register_docker_image_push::ResponseData> = res.json()?;
-
-    if let Some(errors) = response_body.errors {
-        return Err(anyhow!("server respond: {}", errors.iter().map(|err|err.to_string()).collect::<Vec<_>>().join(" / ")));
+        return Err(anyhow!(
+            "server responded with http status {:?}",
+            res.status()
+        ));
     }
 
     Ok(())
 }
 
-fn read_input() -> anyhow::Result<(InputParams, EnvParams)>{
+fn read_input() -> anyhow::Result<(InputParams, EnvParams)> {
     let args = InputParams::parse();
     let params = EnvParams::try_from_env()?;
 
     Ok((args, params))
 }
 
-#[derive(GraphQLQuery)]
-#[graphql(
-schema_path = "schema.graphql",
-query_path = "register_docker_image_push.graphql",
-)]
-struct GitHubActionRegisterDockerImagePush;
-
 struct Config {
-    graphql_url: reqwest::Url,
+    transistor_api_base_url: reqwest::Url,
 }
 
 impl Config {
     fn try_from_env() -> anyhow::Result<Self> {
-        Ok(Config{
-            graphql_url: std::env::var("T3_GRAPHQL_URL").ok().unwrap_or_else(||String::from("https://api.transistor.eof.dev/graphql")).as_str().try_into()?,
+        Ok(Config {
+            transistor_api_base_url: std::env::var("T3_BASE_URL")
+                .ok()
+                .unwrap_or_else(|| String::from("https://api.transistor.eof.dev"))
+                .as_str()
+                .try_into()?,
         })
     }
 }
@@ -86,6 +100,9 @@ impl Config {
 struct InputParams {
     #[arg(short, long)]
     docker_image: String,
+
+    #[arg(short, long)]
+    org_id: String,
 }
 
 struct EnvParams {
@@ -96,7 +113,7 @@ struct EnvParams {
 
 impl EnvParams {
     fn try_from_env() -> anyhow::Result<Self> {
-        Ok(EnvParams{
+        Ok(EnvParams {
             server_url: read_env("GITHUB_SERVER_URL")?,
             repository: read_env("GITHUB_REPOSITORY")?,
             commit_sha: read_env("GITHUB_SHA")?,
@@ -105,5 +122,6 @@ impl EnvParams {
 }
 
 fn read_env<K: AsRef<OsStr>>(var: K) -> anyhow::Result<String> {
-    std::env::var(var.as_ref()).map_err(|_|anyhow!("missing environment variable {:?}", var.as_ref().to_str()))
+    std::env::var(var.as_ref())
+        .map_err(|_| anyhow!("missing environment variable {:?}", var.as_ref().to_str()))
 }

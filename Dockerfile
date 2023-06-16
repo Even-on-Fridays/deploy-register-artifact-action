@@ -5,7 +5,6 @@ WORKDIR /app
 ADD ./src ./src
 ADD ./Cargo.lock ./
 ADD ./Cargo.toml ./
-ADD ./*.graphql ./
 
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
