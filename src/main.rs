@@ -88,7 +88,7 @@ impl Config {
         Ok(Config {
             transistor_api_base_url: std::env::var("T3_BASE_URL")
                 .ok()
-                .unwrap_or_else(|| String::from("https://api.transistor.eof.dev"))
+                .unwrap_or_else(|| String::from("https://api.transistor.cloud"))
                 .as_str()
                 .try_into()?,
         })
