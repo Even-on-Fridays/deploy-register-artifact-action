@@ -86,9 +86,9 @@ struct Config {
 impl Config {
     fn try_from_env() -> anyhow::Result<Self> {
         Ok(Config {
-            transistor_api_base_url: std::env::var("T3_BASE_URL")
+            transistor_api_base_url: std::env::var("EOF_DEPLOY_BASE_URL")
                 .ok()
-                .unwrap_or_else(|| String::from("https://api.transistor.cloud"))
+                .unwrap_or_else(|| String::from("https://deploy.eofsuite.com"))
                 .as_str()
                 .try_into()?,
         })

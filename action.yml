@@ -1,12 +1,12 @@
 # action.yml
-name: 'Register Docker artifact in Transistor'
-description: 'Notify Transistor about recent pushed docker containers.'
+name: 'Register Docker artifact in EOF Deploy'
+description: 'Notify EOF Deploy about recent pushed docker containers.'
 inputs:
   docker-image:
     description: 'Docker image incl. tag that have been pushed to the registry.'
     required: true
   org-id:
-    description: 'Transistor OrgId.'
+    description: 'EOF OrgId.'
     required: true
 runs:
   using: 'docker'
