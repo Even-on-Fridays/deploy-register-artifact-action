@@ -9,7 +9,7 @@ ADD ./Cargo.toml ./
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
 FROM alpine AS runtime
-RUN addgroup -S transistor && adduser -S transistor -G transistor
+RUN addgroup -S eofsuite && adduser -S eofsuite -G eofsuite
 
 RUN mkdir -p /app
 WORKDIR /app
@@ -22,4 +22,4 @@ USER transistor
 #ENV GITHUB_REPOSITORY
 #ENV GITHUB_SHA
 
-ENTRYPOINT ["/app/transistor-register-artifact-action"]
+ENTRYPOINT ["/app/deploy-register-artifact-action"]
