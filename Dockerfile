@@ -9,14 +9,14 @@ ADD ./Cargo.toml ./
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
 FROM alpine AS runtime
-RUN addgroup -S eofsuite && adduser -S eofsuite -G eofsuite
+RUN addgroup -S action-runner && adduser -S action-runner -G action-runner
 
 RUN mkdir -p /app
 WORKDIR /app
 
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/ /app/
 
-USER transistor
+USER action-runner
 
 #ENV GITHUB_SERVER_URL
 #ENV GITHUB_REPOSITORY
